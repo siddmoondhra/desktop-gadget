@@ -1,0 +1,4 @@
+flask
+luma.oled
+RPi.GPIO
+requests
