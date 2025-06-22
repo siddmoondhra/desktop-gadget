@@ -1,4 +1,13 @@
-flask
-luma.oled
+# Core dependencies
+adafruit-circuitpython-ssd1306
+adafruit-blinka
 RPi.GPIO
+pillow
 requests
+python-dotenv
+
+# Spotify integration
+spotipy
+
+# Optional but recommended
+psutil  # for system monitoring
