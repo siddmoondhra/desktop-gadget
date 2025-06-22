@@ -16,7 +16,7 @@ After=network.target
 Type=simple
 User=${USER}
 WorkingDirectory=${PROJECT_DIR}
-ExecStart=${PROJECT_DIR}/run.sh
+ExecStart=${PROJECT_DIR}/scripts/run.sh
 Restart=always
 RestartSec=5
 

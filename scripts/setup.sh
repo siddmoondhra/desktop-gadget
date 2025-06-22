@@ -33,8 +33,8 @@ echo "Testing I2C connection..."
 i2cdetect -y 1
 
 # Make the script executable
-chmod +x run.sh
+chmod +x scripts/run.sh
 
 echo "Setup complete! Please:"
 echo "1. Edit .env with your API keys"
-echo "2. Run: ./run.sh"
+echo "2. Run: ./scripts/run.sh"

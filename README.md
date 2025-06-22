@@ -27,8 +27,8 @@ A handheld device with OLED display and tactile buttons running multiple apps in
 
 2. Run setup script:
    ```bash
-   chmod +x setup.sh
-   ./setup.sh
+   chmod +x scripts/setup.sh
+   ./scripts/setup.sh
    ```
 
 3. Configure API keys:
@@ -38,13 +38,13 @@ A handheld device with OLED display and tactile buttons running multiple apps in
 
 4. Run the project:
    ```bash
-   ./run.sh
+   ./scripts/run.sh
    ```
 
 ## Optional: Auto-start on boot
 
 ```bash
-./install-service.sh
+./scripts/install-service.sh
 sudo systemctl start oled-device
 ```
 
