@@ -1,58 +1,42 @@
+#!/usr/bin/env python3
+import RPi.GPIO as GPIO
 import time
-import os
+import config
 
-# Test using the sysfs GPIO interface (more reliable)
-def setup_gpio_pin(pin):
-    # Export the pin
-    try:
-        with open('/sys/class/gpio/export', 'w') as f:
-            f.write(str(pin))
-    except:
-        pass  # Pin might already be exported
+# Test script to debug button issues
+def test_buttons():
+    GPIO.setmode(GPIO.BCM)
+    GPIO.setwarnings(False)
     
-    time.sleep(0.1)
+    button_pins = {
+        'up': config.BUTTON_UP,      # 17
+        'down': config.BUTTON_DOWN,  # 27
+        'select': config.BUTTON_SELECT, # 22
+        'back': config.BUTTON_BACK   # 23
+    }
     
-    # Set as input
-    with open(f'/sys/class/gpio/gpio{pin}/direction', 'w') as f:
-        f.write('in')
-
-def read_gpio_pin(pin):
+    # Setup buttons
+    for name, pin in button_pins.items():
+        GPIO.setup(pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+        print(f"Button {name} on pin {pin}")
+    
+    print("Button test started. Press buttons to test...")
+    print("Press Ctrl+C to exit")
+    
     try:
-        with open(f'/sys/class/gpio/gpio{pin}/value', 'r') as f:
-            return int(f.read().strip())
-    except:
-        return -1
+        while True:
+            for name, pin in button_pins.items():
+                # Read raw pin state
+                pin_state = GPIO.input(pin)
+                if not pin_state:  # Button pressed (LOW due to pull-up)
+                    print(f"Button {name} (pin {pin}) is pressed! Raw state: {pin_state}")
+                    time.sleep(0.5)  # Prevent spam
+            
+            time.sleep(0.1)
+            
+    except KeyboardInterrupt:
+        print("\nTest ended")
+        GPIO.cleanup()
 
-# Test your pins
-pins = {
-    'up': 17,      # Grey wire
-    'down': 27,    # Black wire  
-    'select': 22,  # Brown wire
-    'back': 23     # Purple wire
-}
-
-print("Setting up GPIO pins...")
-for name, pin in pins.items():
-    setup_gpio_pin(pin)
-    print(f"Setup {name} on GPIO {pin}")
-
-print("\nReading pins (should be 1 normally, 0 when pressed):")
-print("Press Ctrl+C to exit")
-
-try:
-    while True:
-        for name, pin in pins.items():
-            value = read_gpio_pin(pin)
-            if value == 0:  # Button pressed
-                print(f"{name} button pressed (GPIO {pin})")
-                time.sleep(0.3)
-        time.sleep(0.1)
-        
-except KeyboardInterrupt:
-    print("\nCleaning up...")
-    for name, pin in pins.items():
-        try:
-            with open('/sys/class/gpio/unexport', 'w') as f:
-                f.write(str(pin))
-        except:
-            pass
+if __name__ == "__main__":
+    test_buttons()
