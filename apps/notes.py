@@ -6,11 +6,11 @@ class NotesApp:
         self.display = display
         self.buttons = buttons
         self.notes = [
-            "You're amazing! ❤️",
-            "I love you!",
+            "You're amazing!",
+            "I love you <3",
             "You make me happy",
-            "You're my sunshine ☀️",
-            "Thinking of you 💭"
+            "You're my sunshine :)",
+            "Thinking of you my love"
         ]
         self.current_note = 0
         

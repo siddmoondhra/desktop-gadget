@@ -57,7 +57,7 @@ class WeatherApp:
             params = {
                 'q': self.city,
                 'appid': self.api_key,
-                'units': 'metric'
+                'units': 'imperial'
             }
             
             response = requests.get(url, params=params, timeout=10)
@@ -69,7 +69,7 @@ class WeatherApp:
                 desc = data["weather"][0]["description"]
                 humidity = data["main"]["humidity"]
                 
-                self.current_weather = f"{self.city}\n{temp:.1f}°C ({feels_like:.0f}°C)\n{desc.title()}\n{humidity}% humidity"
+                self.current_weather = f"{self.city}\n{temp:.0f}°F (feels {feels_like:.0f}°F)\n{desc.title()}\n{humidity}% humid"
                 self.last_update = time.time()
                 self.retry_count = 0
                 
