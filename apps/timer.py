@@ -8,7 +8,7 @@ class TimerApp:
         self.running = False
         self.start_time = 0
         self.duration = 300  # 5 minutes default
-        self.saved_durations = [60, 300, 600, 1800]  # 1, 5, 10, 30 minutes
+        self.saved_durations = [60, 300, 600, 1800, 3600]  # 1, 5, 10, 30, 60 minutes
         
     def run(self):
         self._reset_timer()
@@ -39,7 +39,7 @@ class TimerApp:
             
         mins, secs = divmod(int(remaining), 60)
         timer_text = f"{mins:02d}:{secs:02d}"
-        status = "▶️" if self.running else "⏸️"
+        status = "RUN" if self.running else "STOP"
         self.display.draw_centered_text(f"{status} {timer_text}\nSet: {self.duration//60}min")
         
     def _toggle_timer(self):
