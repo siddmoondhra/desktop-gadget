@@ -35,7 +35,7 @@ class WeatherApp:
             if current_time - self.last_update > self.refresh_interval:
                 self._fetch_weather()
                 
-            self._display_scrollable_weather()
+            self._display_weather()
             
             button = self.buttons.get_pressed()
             if button == 'back':
@@ -43,41 +43,30 @@ class WeatherApp:
             elif button == 'select':
                 # Manual refresh
                 self.current_weather = "Refreshing..."
-                self.weather_lines = ["Refreshing..."]
-                self.scroll_position = 0
                 self.display.draw_centered_text(self.current_weather)
                 self._fetch_weather()
             elif button == 'up':
                 # Scroll up
                 if self.scroll_position > 0:
                     self.scroll_position -= 1
-                time.sleep(0.2)  # Prevent too fast scrolling
+                time.sleep(0.2)
             elif button == 'down':
                 # Scroll down
-                max_scroll = max(0, len(self.weather_lines) - 2)  # Show 2 lines at a time
+                max_scroll = max(0, len(self.weather_lines) - 2)
                 if self.scroll_position < max_scroll:
                     self.scroll_position += 1
-                time.sleep(0.2)  # Prevent too fast scrolling
+                time.sleep(0.2)
                 
             time.sleep(0.1)
     
-    def _display_scrollable_weather(self):
+    def _display_weather(self):
         if not self.weather_lines:
-            self.display.draw_centered_text("No weather data")
+            self.display.draw_centered_text(self.current_weather)
             return
         
         # Show 2 lines at a time based on scroll position
         visible_lines = self.weather_lines[self.scroll_position:self.scroll_position + 2]
-        
-        # Add scroll indicators
         scroll_text = "\n".join(visible_lines)
-        
-        # Add scroll indicators if there's more content
-        if self.scroll_position > 0:
-            scroll_text = "↑ " + scroll_text
-        if self.scroll_position < len(self.weather_lines) - 2:
-            scroll_text = scroll_text + " ↓"
-            
         self.display.draw_centered_text(scroll_text)
             
     def _fetch_weather(self):
@@ -91,7 +80,7 @@ class WeatherApp:
             params = {
                 'q': self.city,
                 'appid': self.api_key,
-                'units': 'imperial'  # Fahrenheit
+                'units': 'imperial'
             }
             
             response = requests.get(url, params=params, timeout=10)
@@ -102,24 +91,21 @@ class WeatherApp:
                 feels_like = data["main"]["feels_like"]
                 desc = data["weather"][0]["description"]
                 humidity = data["main"]["humidity"]
-                wind_speed = data["wind"]["speed"]
                 
-                # Create scrollable lines
+                # Create the old format for fallback
+                self.current_weather = f"{self.city}\n{temp:.0f}°F (feels {feels_like:.0f}°F)\n{desc.title()}\n{humidity}% humid"
+                
+                # Create scrollable lines from the same data
                 self.weather_lines = [
                     f"{self.city}",
-                    f"Temperature: {temp:.0f}°F",
-                    f"Feels like: {feels_like:.0f}°F",
-                    f"Condition: {desc.title()}",
-                    f"Humidity: {humidity}%",
-                    f"Wind: {wind_speed:.1f} mph"
+                    f"{temp:.0f}°F (feels {feels_like:.0f}°F)",
+                    f"{desc.title()}",
+                    f"{humidity}% humid"
                 ]
-                
-                # Also keep the old format for fallback
-                self.current_weather = f"{self.city}\n{temp:.0f}°F (feels {feels_like:.0f}°F)\n{desc.title()}\n{humidity}% humid"
                 
                 self.last_update = time.time()
                 self.retry_count = 0
-                self.scroll_position = 0  # Reset scroll when new data arrives
+                self.scroll_position = 0
                 
             elif response.status_code == 401:
                 self.current_weather = "Invalid API key"
@@ -142,7 +128,7 @@ class WeatherApp:
             if self.retry_count <= self.max_retries:
                 self.current_weather = f"Retrying...\n({self.retry_count}/{self.max_retries})"
                 self.weather_lines = ["Retrying...", f"({self.retry_count}/{self.max_retries})"]
-                time.sleep(2)  # Wait before retry
+                time.sleep(2)
                 self._fetch_weather()
             else:
                 self.current_weather = f"Weather error:\n{str(e)[:20]}"
