@@ -42,10 +42,10 @@ class SpotifyApp:
             try:
                 # Get the access token
                 token_info = self.auth_manager.get_access_token(redirect_response)
-                print("✅ Authentication successful!")
+                print("Authentication successful!")
                 time.sleep(2)
             except Exception as e:
-                print(f"❌ Authentication failed: {e}")
+                print(f"Authentication failed: {e}")
                 print("Please try running the app again.")
                 raise
         
@@ -53,6 +53,51 @@ class SpotifyApp:
         self.sp = spotipy.Spotify(auth_manager=self.auth_manager)
         self.current_track = None
         self.is_playing = False
+        
+    def _clean_text(self, text):
+        """Remove problematic Unicode characters"""
+        if not text:
+            return ""
+        
+        # Convert to string and remove variation selectors and other problematic Unicode
+        text = str(text)
+        
+        # Remove variation selectors and other invisible Unicode characters
+        cleaned = ""
+        for char in text:
+            # Skip variation selectors and other problematic Unicode ranges
+            if ord(char) == 0xfe0f:  # Variation selector-16
+                continue
+            if ord(char) == 0xfe0e:  # Variation selector-15
+                continue
+            if 0x200d <= ord(char) <= 0x200f:  # Zero-width joiners
+                continue
+            if 0x2060 <= ord(char) <= 0x206f:  # Various invisible characters
+                continue
+            
+            try:
+                # Test if character can be encoded to latin-1
+                char.encode('latin-1')
+                cleaned += char
+            except UnicodeEncodeError:
+                # Replace with ASCII equivalent if possible
+                if char == '–':  # en dash
+                    cleaned += '-'
+                elif char == '—':  # em dash
+                    cleaned += '-'
+                elif char == ''':  # left single quote
+                    cleaned += "'"
+                elif char == ''':  # right single quote
+                    cleaned += "'"
+                elif char == '"':  # left double quote
+                    cleaned += '"'
+                elif char == '"':  # right double quote
+                    cleaned += '"'
+                else:
+                    # Skip unknown characters
+                    pass
+        
+        return cleaned
         
     def run(self):
         while True:
@@ -76,9 +121,10 @@ class SpotifyApp:
             current = self.sp.current_playback()
             if current:
                 self.is_playing = current['is_playing']
+                # Clean the text data from Spotify
                 self.current_track = {
-                    'name': current['item']['name'],
-                    'artist': current['item']['artists'][0]['name']
+                    'name': self._clean_text(current['item']['name']),
+                    'artist': self._clean_text(current['item']['artists'][0]['name'])
                 }
         except Exception as e:
             print(f"Spotify error: {e}")
@@ -89,9 +135,14 @@ class SpotifyApp:
             self.display.draw_centered_text("No active playback")
             return
             
-        status = "▶️" if self.is_playing else "⏸️"
-        text = f"{status} {self.current_track['name']}\nby {self.current_track['artist']}"
-        self.display.draw_centered_text(text)
+        # Use simple ASCII characters only
+        status = "PLAY" if self.is_playing else "PAUSE"
+        text = f"{status}\n{self.current_track['name']}\nby {self.current_track['artist']}"
+        
+        # Clean the final text as well
+        clean_text = self._clean_text(text)
+        
+        self.display.draw_centered_text(clean_text)
         
     def _toggle_playback(self):
         try:
