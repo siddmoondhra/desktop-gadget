@@ -10,7 +10,9 @@ class NotesApp:
             "I love you <3",
             "You make me happy",
             "You're my sunshine :)",
-            "Thinking of you my love"
+            "Thinking of you my love",
+            "You got this bubba!"
+            
         ]
         self.current_note = 0
         

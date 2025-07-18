@@ -9,13 +9,48 @@ class SpotifyApp:
         self.display = display
         self.buttons = buttons
         
-        # Spotify setup
-        self.sp = spotipy.Spotify(auth_manager=SpotifyOAuth(
+        # Spotify setup with manual authentication
+        self.auth_manager = SpotifyOAuth(
             client_id=os.getenv('SPOTIFY_CLIENT_ID'),
             client_secret=os.getenv('SPOTIFY_CLIENT_SECRET'),
             redirect_uri=os.getenv('SPOTIFY_REDIRECT_URI'),
-            scope="user-read-playback-state,user-modify-playback-state"))
+            scope="user-read-playback-state,user-modify-playback-state",
+            open_browser=False  # Prevent automatic browser opening
+        )
+        
+        # Check if we need to authenticate
+        token_info = self.auth_manager.get_cached_token()
+        if not token_info:
+            print("\n" + "="*50)
+            print("SPOTIFY AUTHENTICATION REQUIRED")
+            print("="*50)
             
+            # Get the authorization URL
+            auth_url = self.auth_manager.get_authorize_url()
+            print(f"\n1. Go to this URL in a browser (phone/computer):")
+            print(f"{auth_url}")
+            print(f"\n2. Log in with your girlfriend's Spotify account")
+            print(f"3. After logging in, copy the FULL URL from the address bar")
+            print(f"4. Paste it below and press Enter")
+            print(f"\nNote: The URL will start with 'http://localhost:8080/?code=...'")
+            print(f"It's normal if the page shows an error - just copy the URL!")
+            print("-" * 50)
+            
+            # Get the redirect response
+            redirect_response = input("Paste the redirect URL here: ").strip()
+            
+            try:
+                # Get the access token
+                token_info = self.auth_manager.get_access_token(redirect_response)
+                print("✅ Authentication successful!")
+                time.sleep(2)
+            except Exception as e:
+                print(f"❌ Authentication failed: {e}")
+                print("Please try running the app again.")
+                raise
+        
+        # Initialize Spotify client
+        self.sp = spotipy.Spotify(auth_manager=self.auth_manager)
         self.current_track = None
         self.is_playing = False
         
