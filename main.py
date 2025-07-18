@@ -7,7 +7,7 @@ from apps.notes import NotesApp
 from apps.music_control import SpotifyApp
 from apps.timer import TimerApp
 from apps.snake_game import SnakeGame  # Add this import
-from apps.dino_runner import DinoRunner  # Add this import
+from apps.dino_game import DinoRunner  # Add this import
 from lib.display import Display
 from lib.buttons import ButtonHandler
 import config
