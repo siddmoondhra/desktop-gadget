@@ -114,7 +114,7 @@ class SpotifyApp:
             elif button == 'down':
                 self._previous_track()
                 
-            time.sleep(0.5)  # Longer sleep to reduce API calls
+            time.sleep(0.1)  # Much faster response - was 0.5
             
     def _update_playback_state(self):
         try:
@@ -193,13 +193,13 @@ class SpotifyApp:
     def _next_track(self):
         try:
             self.sp.next_track()
-            time.sleep(0.5)  # Wait for update
+            # Remove the sleep - let the next update cycle handle it
         except Exception as e:
             print(f"Next track error: {e}")
             
     def _previous_track(self):
         try:
             self.sp.previous_track()
-            time.sleep(0.5)  # Wait for update
+            # Remove the sleep - let the next update cycle handle it
         except Exception as e:
             print(f"Previous track error: {e}")
