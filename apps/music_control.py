@@ -148,11 +148,47 @@ class SpotifyApp:
         try:
             if self.is_playing:
                 self.sp.pause_playback()
+                self.is_playing = False
             else:
-                self.sp.start_playback()
-            self.is_playing = not self.is_playing
+                # Try to resume playback
+                try:
+                    self.sp.start_playback()
+                    self.is_playing = True
+                except Exception as resume_error:
+                    # If resume fails, try to find and activate a device
+                    print(f"Resume failed, trying to find device: {resume_error}")
+                    devices = self.sp.devices()
+                    
+                    if devices['devices']:
+                        # Find the best device (prefer active ones)
+                        active_device = None
+                        available_device = None
+                        
+                        for device in devices['devices']:
+                            if device['is_active']:
+                                active_device = device
+                                break
+                            elif available_device is None:
+                                available_device = device
+                        
+                        target_device = active_device or available_device
+                        
+                        if target_device:
+                            print(f"Trying device: {target_device['name']}")
+                            self.sp.start_playback(device_id=target_device['id'])
+                            self.is_playing = True
+                        else:
+                            raise Exception("No usable devices found")
+                    else:
+                        raise Exception("No devices available")
+                        
         except Exception as e:
             print(f"Playback toggle error: {e}")
+            # Show helpful error message
+            if "No active device" in str(e) or "No devices" in str(e):
+                self.display.draw_centered_text("Open Spotify app\nand play something")
+            else:
+                self.display.draw_centered_text("Playback error\nTry again")
             
     def _next_track(self):
         try:
