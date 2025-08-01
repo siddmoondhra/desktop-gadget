@@ -10,4 +10,4 @@ BUTTON_SELECT = 22
 BUTTON_BACK = 23
 
 # App config
-MENU_OPTIONS = ["Weather", "Sweet Notes", "Spotify", "Timer"]
+MENU_OPTIONS = ["Weather", "Sweet Notes", "Spotify", "Timer", "Games"]

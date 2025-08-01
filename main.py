@@ -6,8 +6,9 @@ from apps.weather import WeatherApp
 from apps.notes import NotesApp
 from apps.music_control import SpotifyApp
 from apps.timer import TimerApp
-from apps.snake_game import SnakeGame  # Add this import
-from apps.dino_game import DinoRunner  # Add this import
+from apps.snake_game import SnakeGame  # Your existing snake game
+from apps.dino_game import DinoRunner  # Your existing dino game
+from apps.games_menu import GamesMenu  # New games menu
 from lib.display import Display
 from lib.buttons import ButtonHandler
 import config
@@ -23,14 +24,22 @@ def main():
         display.draw_centered_text("Starting up...")
         time.sleep(1)
         
-        # Initialize apps (including games)
+        # Initialize games separately
+        games = [
+            SnakeGame(display, buttons),
+            DinoRunner(display, buttons)
+        ]
+        
+        # Create games menu
+        games_menu = GamesMenu(display, buttons, games)
+        
+        # Initialize main apps (including games menu)
         apps = [
             WeatherApp(display, buttons),
             NotesApp(display, buttons),
             SpotifyApp(display, buttons),
             TimerApp(display, buttons),
-            SnakeGame(display, buttons),      # Add Snake game
-            DinoRunner(display, buttons)      # Add Dino Runner game
+            games_menu  # Games submenu replaces individual games
         ]
         
         # Start menu system
