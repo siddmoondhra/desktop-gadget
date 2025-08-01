@@ -9,7 +9,7 @@ class NotesApp:
             "FOR RIMSHA ONLY",
             "I've put some sweet blurbs here :)",
             "I'll update them periodically,",
-            "and I hope you like it!"
+            "and I hope you like it!",
             "You got this bubba!",
             "I love you! <3",
             "You make me so happy",
