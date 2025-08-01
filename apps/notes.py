@@ -6,11 +6,16 @@ class NotesApp:
         self.display = display
         self.buttons = buttons
         self.notes = [
+            "FOR RIMSHA ONLY",
+            "I've put some sweet blurbs here :)",
+            "I'll update them periodically,",
+            "and I hope you like it!"
             "You got this bubba!",
             "I love you! <3",
             "You make me so happy",
             "I'm so proud of you",
-            "You look amazing today!"
+            "You look amazing today!",
+            "Really, you got that shi on doe",
             "Thinking of you my love",
             "I miss you so, so much",
             "Rimsha, you mean the world to me :)",
@@ -27,7 +32,12 @@ class NotesApp:
             "Passionate,",
             "And amazing person I know.",
             "You make every day special,",
-            "and you're going to do great things :)"
+            "and you're going to do great things :)",
+            "You're the light of my life",
+            "You're the most beautiful person ever",
+            "I can't wait to marry you",
+            "I'm so lucky I get to grow old with you",
+            "I love you, Rimsha."
             
         ]
         self.current_note = 0
