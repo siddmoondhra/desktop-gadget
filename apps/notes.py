@@ -2,16 +2,32 @@ import time
 
 class NotesApp:
     def __init__(self, display, buttons):
-        self.name = "Sweet Notes"
+        self.name = "Notes"
         self.display = display
         self.buttons = buttons
         self.notes = [
-            "You're amazing!",
-            "I love you <3",
-            "You make me happy",
-            "You're my sunshine :)",
+            "You got this bubba!",
+            "I love you! <3",
+            "You make me so happy",
+            "I'm so proud of you",
+            "You look amazing today!"
             "Thinking of you my love",
-            "You got this bubba!"
+            "I miss you so, so much",
+            "Rimsha, you mean the world to me :)",
+            "I'll always love and support you!",
+            "My love, you're the most:",
+            "Loving,",
+            "Hard-working,",
+            "Funny,",
+            "Beautiful,",
+            "Caring,",
+            "Gorgeous,",
+            "Kind,",
+            "Thoughtful,",
+            "Passionate,",
+            "And amazing person I know.",
+            "You make every day special,",
+            "and you're going to do great things :)"
             
         ]
         self.current_note = 0
