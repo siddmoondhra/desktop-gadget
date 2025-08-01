@@ -21,6 +21,11 @@ class SnakeGame:
         self.game_over = False
         self.speed = 0.3  # Seconds between moves
         
+        # Back button handling for double-press exit
+        self.back_press_count = 0
+        self.last_back_press = 0
+        self.double_press_window = 0.5  # 0.5 seconds to register double press
+        
     def run(self):
         self._reset_game()
         last_move_time = time.time()
@@ -31,19 +36,29 @@ class SnakeGame:
             # Handle input
             button = self.buttons.get_pressed()
             if button == 'back':
-                return
+                # Handle double-press exit logic
+                current_time = time.time()
+                if current_time - self.last_back_press < self.double_press_window:
+                    # Double press - exit game
+                    return
+                else:
+                    # Single press - turn left (if not game over)
+                    if not self.game_over:
+                        self._turn_left()
+                    self.last_back_press = current_time
             elif button == 'select' and self.game_over:
                 self._reset_game()
                 last_move_time = current_time
                 continue
             elif not self.game_over:
-                if button == 'up' and self.direction != (0, 1):
-                    self.direction = (0, -1)
-                elif button == 'down' and self.direction != (0, -1):
-                    self.direction = (0, 1)
-                elif button == 'select' and self.direction != (-1, 0):
-                    self.direction = (1, 0)  # Right (select button)
-                # Note: We'll use back as left if needed, but it exits for now
+                # Relative turning
+                if button == 'up':
+                    self._turn_left()
+                elif button == 'down':
+                    self._turn_right()
+                elif button == 'select':
+                    # Boost/turbo mode - move faster this frame
+                    self._move_snake()  # Extra move for speed
                 
             # Game logic
             if not self.game_over and current_time - last_move_time >= self.speed:
@@ -60,6 +75,20 @@ class SnakeGame:
         self.food = self._generate_food()
         self.score = 0
         self.game_over = False
+        self.back_press_count = 0
+        self.last_back_press = 0
+        
+    def _turn_left(self):
+        # Rotate direction 90 degrees counter-clockwise
+        directions = [(1, 0), (0, -1), (-1, 0), (0, 1)]  # right, up, left, down
+        current_index = directions.index(self.direction)
+        self.direction = directions[(current_index + 1) % 4]
+        
+    def _turn_right(self):
+        # Rotate direction 90 degrees clockwise
+        directions = [(1, 0), (0, -1), (-1, 0), (0, 1)]  # right, up, left, down
+        current_index = directions.index(self.direction)
+        self.direction = directions[(current_index - 1) % 4]
         
     def _generate_food(self):
         while True:

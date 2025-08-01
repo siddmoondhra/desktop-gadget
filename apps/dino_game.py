@@ -23,14 +23,14 @@ class DinoRunner:
         self.obstacles = []
         self.score = 0
         self.game_over = False
-        self.speed = 2  # Pixels per frame
-        self.jump_power = -6
-        self.gravity = 0.8
+        self.speed = 4  # Much faster! (was 2)
+        self.jump_power = -7  # Stronger jump for faster gameplay
+        self.gravity = 1.0  # Slightly stronger gravity
         
         # Animation
         self.frame_count = 0
         self.spawn_timer = 0
-        self.spawn_interval = 60  # Frames between obstacles
+        self.spawn_interval = 40  # Faster spawning (was 60)
         
     def run(self):
         self._reset_game()
@@ -48,13 +48,16 @@ class DinoRunner:
                     self._jump()
             elif button == 'down' and not self.dino_on_ground:
                 # Fast fall
-                self.dino_velocity += 2
+                self.dino_velocity += 3  # More aggressive fast fall
+            elif button == 'up':
+                # Turbo mode - speed up the game temporarily
+                self.speed = min(self.speed + 2, 10)  # Temporary speed boost
                 
             if not self.game_over:
                 self._update_game()
                 
             self._draw_game()
-            time.sleep(0.05)  # ~20 FPS
+            time.sleep(0.02)  # Even faster! ~50 FPS for ultra-responsive gameplay
             
     def _reset_game(self):
         self.dino_y = self.display.height - self.ground_height - self.dino_height
@@ -65,8 +68,8 @@ class DinoRunner:
         self.game_over = False
         self.frame_count = 0
         self.spawn_timer = 0
-        self.speed = 2
-        self.spawn_interval = 60
+        self.speed = 5  # Even faster initial speed (was 4)
+        self.spawn_interval = 35  # More frequent obstacles (was 40)
         
     def _jump(self):
         if self.dino_on_ground:
@@ -131,10 +134,10 @@ class DinoRunner:
                 self.game_over = True
                 return
                 
-        # Increase difficulty
-        if self.frame_count % 300 == 0:  # Every 15 seconds
-            self.speed = min(self.speed + 0.5, 6)
-            self.spawn_interval = max(self.spawn_interval - 2, 30)
+        # Increase difficulty much faster
+        if self.frame_count % 150 == 0:  # Every 3 seconds at 50 FPS
+            self.speed = min(self.speed + 1.0, 12)  # Big speed jumps, very high max
+            self.spawn_interval = max(self.spawn_interval - 2, 15)  # Very aggressive spawning
             
     def _check_collision(self, rect1, rect2):
         return (rect1['x'] < rect2['x'] + rect2['width'] and

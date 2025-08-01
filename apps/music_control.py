@@ -59,7 +59,6 @@ class SpotifyApp:
         if not text:
             return ""
         
-        # Convert to string and remove variation selectors and other problematic Unicode
         text = str(text)
         
         # Remove variation selectors and other invisible Unicode characters
