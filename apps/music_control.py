@@ -8,15 +8,26 @@ class SpotifyApp:
         self.name = "Spotify"
         self.display = display
         self.buttons = buttons
+        
+        # DON'T authenticate in init - that's what's causing the startup issue
+        self.auth_manager = None
         self.sp = None
         self.current_track = None
         self.is_playing = False
         
     def run(self):
-        # Try to use existing token or create new one
-        if not self._setup_spotify():
-            return
-            
+        # Only set up Spotify when the app is actually run
+        self.auth_manager = SpotifyOAuth(
+            client_id=os.getenv('SPOTIFY_CLIENT_ID'),
+            client_secret=os.getenv('SPOTIFY_CLIENT_SECRET'),
+            redirect_uri=os.getenv('SPOTIFY_REDIRECT_URI'),
+            scope="user-read-playback-state,user-modify-playback-state",
+            open_browser=False
+        )
+        
+        # Initialize Spotify client - this will use cached token if available
+        self.sp = spotipy.Spotify(auth_manager=self.auth_manager)
+        
         while True:
             self._update_playback_state()
             self._display_playback_info()
@@ -33,82 +44,36 @@ class SpotifyApp:
                 
             time.sleep(0.1)
             
-    def _setup_spotify(self):
-        """Setup Spotify client using the simplest method possible"""
-        try:
-            # Method 1: Try using cached token
-            auth_manager = SpotifyOAuth(
-                client_id=os.getenv('SPOTIFY_CLIENT_ID'),
-                client_secret=os.getenv('SPOTIFY_CLIENT_SECRET'),
-                redirect_uri=os.getenv('SPOTIFY_REDIRECT_URI'),
-                scope="user-read-playback-state,user-modify-playback-state",
-                open_browser=False,
-                cache_path=".cache"
-            )
-            
-            self.sp = spotipy.Spotify(auth_manager=auth_manager)
-            
-            # Test if it works
-            self.sp.current_user()
-            print("Using cached authentication")
-            return True
-            
-        except Exception as e:
-            print(f"Cached auth failed: {e}")
-            
-        # Method 2: Manual token creation
-        print("\nManual Setup Required:")
-        print("1. Go to: https://developer.spotify.com/console/get-current-user/")
-        print("2. Click 'Get Token'")
-        print("3. Select the required scopes:")
-        print("   - user-read-playback-state")
-        print("   - user-modify-playback-state")
-        print("4. Copy the token that appears")
-        
-        token = input("\nPaste your token here: ").strip()
-        
-        try:
-            self.sp = spotipy.Spotify(auth=token)
-            # Test the token
-            self.sp.current_user()
-            print("Token works!")
-            
-            # Save token for future use
-            import json
-            token_data = {
-                "access_token": token,
-                "token_type": "Bearer",
-                "expires_in": 3600,
-                "scope": "user-read-playback-state user-modify-playback-state"
-            }
-            
-            with open('.cache-manual', 'w') as f:
-                json.dump(token_data, f)
-                
-            return True
-            
-        except Exception as e:
-            print(f"Token failed: {e}")
-            self.display.draw_centered_text("Setup failed")
-            time.sleep(2)
-            return False
-            
     def _clean_text(self, text):
-        """Remove problematic characters"""
+        """Remove problematic Unicode characters"""
         if not text:
             return ""
         
+        text = str(text)
         cleaned = ""
-        for char in str(text):
+        for char in text:
+            if ord(char) == 0xfe0f or ord(char) == 0xfe0e:
+                continue
+            if 0x200d <= ord(char) <= 0x200f:
+                continue
+            if 0x2060 <= ord(char) <= 0x206f:
+                continue
+            
             try:
-                char.encode('ascii')
+                char.encode('latin-1')
                 cleaned += char
             except UnicodeEncodeError:
-                if char in ['–', '—']:
+                if char == '–':
                     cleaned += '-'
-                elif char in [''', ''']:
+                elif char == '—':
+                    cleaned += '-'
+                elif char == ''':
                     cleaned += "'"
-                elif char in ['"', '"']:
+                elif char == ''':
+                    cleaned += "'"
+                elif char == '"':
+                    cleaned += '"'
+                elif char == '"':
                     cleaned += '"'
         
         return cleaned
@@ -116,48 +81,77 @@ class SpotifyApp:
     def _update_playback_state(self):
         try:
             current = self.sp.current_playback()
-            if current and current.get('item'):
+            if current:
                 self.is_playing = current['is_playing']
                 self.current_track = {
                     'name': self._clean_text(current['item']['name']),
                     'artist': self._clean_text(current['item']['artists'][0]['name'])
                 }
-            else:
-                self.current_track = None
-        except Exception:
+        except Exception as e:
+            print(f"Spotify error: {e}")
             self.current_track = None
             
     def _display_playback_info(self):
         if not self.current_track:
-            self.display.draw_centered_text("No music\nplaying")
+            self.display.draw_centered_text("No active playback")
             return
             
-        status = "PLAYING" if self.is_playing else "PAUSED"
-        text = f"{status}\n{self.current_track['name']}\n{self.current_track['artist']}"
+        status = "PLAY" if self.is_playing else "PAUSE"
+        text = f"{status}\n{self.current_track['name']}\nby {self.current_track['artist']}"
         
-        self.display.draw_centered_text(text)
+        clean_text = self._clean_text(text)
+        self.display.draw_centered_text(clean_text)
         
     def _toggle_playback(self):
         try:
             if self.is_playing:
                 self.sp.pause_playback()
+                self.is_playing = False
             else:
-                self.sp.start_playback()
+                try:
+                    self.sp.start_playback()
+                    self.is_playing = True
+                except Exception as resume_error:
+                    print(f"Resume failed, trying to find device: {resume_error}")
+                    devices = self.sp.devices()
+                    
+                    if devices['devices']:
+                        active_device = None
+                        available_device = None
+                        
+                        for device in devices['devices']:
+                            if device['is_active']:
+                                active_device = device
+                                break
+                            elif available_device is None:
+                                available_device = device
+                        
+                        target_device = active_device or available_device
+                        
+                        if target_device:
+                            print(f"Trying device: {target_device['name']}")
+                            self.sp.start_playback(device_id=target_device['id'])
+                            self.is_playing = True
+                        else:
+                            raise Exception("No usable devices found")
+                    else:
+                        raise Exception("No devices available")
+                        
         except Exception as e:
-            if "No active device" in str(e):
-                self.display.draw_centered_text("Start Spotify\nfirst")
+            print(f"Playback toggle error: {e}")
+            if "No active device" in str(e) or "No devices" in str(e):
+                self.display.draw_centered_text("Open Spotify app\nand play something")
             else:
-                self.display.draw_centered_text("Error")
-            time.sleep(1)
+                self.display.draw_centered_text("Playback error\nTry again")
             
     def _next_track(self):
         try:
             self.sp.next_track()
-        except Exception:
-            pass
+        except Exception as e:
+            print(f"Next track error: {e}")
             
     def _previous_track(self):
         try:
             self.sp.previous_track()
-        except Exception:
-            pass
+        except Exception as e:
+            print(f"Previous track error: {e}")
