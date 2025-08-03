@@ -2,7 +2,6 @@ import os
 import time
 import spotipy
 from spotipy.oauth2 import SpotifyOAuth
-import urllib.parse
 
 class SpotifyApp:
     def __init__(self, display, buttons):
@@ -10,108 +9,75 @@ class SpotifyApp:
         self.display = display
         self.buttons = buttons
         
-        # Don't authenticate during init - wait until the app is run
+        # Spotify setup with manual authentication
         self.auth_manager = SpotifyOAuth(
             client_id=os.getenv('SPOTIFY_CLIENT_ID'),
             client_secret=os.getenv('SPOTIFY_CLIENT_SECRET'),
             redirect_uri=os.getenv('SPOTIFY_REDIRECT_URI'),
             scope="user-read-playback-state,user-modify-playback-state",
-            open_browser=False
+            open_browser=False  # Prevent automatic browser opening
         )
         
         self.sp = None
         self.current_track = None
         self.is_playing = False
         
-    def _authenticate(self):
-        """Handle Spotify authentication when needed"""
-        # Check if we already have a token
+    def run(self):
+        # Check if we need to authenticate
         token_info = self.auth_manager.get_cached_token()
-        if token_info:
-            return True
+        if not token_info:
+            print("\n" + "="*50)
+            print("SPOTIFY AUTHENTICATION REQUIRED")
+            print("="*50)
             
-        self.display.draw_centered_text("Spotify Auth\nRequired")
-        time.sleep(2)
-        
-        print("\n" + "="*50)
-        print("SPOTIFY AUTHENTICATION REQUIRED")
-        print("="*50)
-        
-        try:
-            # Try using spotipy's prompt method first
-            token_info = self.auth_manager.get_access_token()
-            if token_info:
-                print("✅ Authentication successful!")
-                return True
-        except Exception as e:
-            print(f"Auto-auth failed: {e}")
+            # Get the authorization URL
+            auth_url = self.auth_manager.get_authorize_url()
+            print(f"\n1. Go to this URL in a browser (phone/computer):")
+            print(f"{auth_url}")
+            print(f"\n2. Log in with your girlfriend's Spotify account")
+            print(f"3. After logging in, copy the FULL URL from the address bar")
+            print(f"4. Paste it below and press Enter")
+            print(f"\nNote: The URL will start with 'http://127.0.0.1:8888/callback?code=...'")
+            print(f"It's normal if the page shows an error - just copy the URL!")
+            print("-" * 50)
             
-        # Fall back to manual method with better error handling
-        auth_url = self.auth_manager.get_authorize_url()
-        print(f"\n1. Go to this URL in a browser:")
-        print(f"{auth_url}")
-        print(f"\n2. Log in with your girlfriend's Spotify account")
-        print(f"3. Copy the FULL URL from the address bar (even if it shows error)")
-        print(f"4. Paste it below and press Enter")
-        print("-" * 50)
+            # Get the redirect response
+            redirect_response = input("Paste the redirect URL here: ").strip()
+            
+            try:
+                # Get the access token
+                token_info = self.auth_manager.get_access_token(redirect_response)
+                print("Authentication successful!")
+                time.sleep(2)
+            except Exception as e:
+                print(f"Authentication failed: {e}")
+                print("Please try running the app again.")
+                return
         
-        redirect_response = input("Paste the redirect URL here: ").strip()
+        # Initialize Spotify client
+        self.sp = spotipy.Spotify(auth_manager=self.auth_manager)
         
-        try:
-            # Try multiple ways to extract the code
-            if 'code=' in redirect_response:
-                # Method 1: Simple split
-                if '&' in redirect_response:
-                    code = redirect_response.split('code=')[1].split('&')[0]
-                else:
-                    code = redirect_response.split('code=')[1]
+        while True:
+            self._update_playback_state()
+            self._display_playback_info()
+            
+            button = self.buttons.get_pressed()
+            if button == 'back':
+                return
+            elif button == 'select':
+                self._toggle_playback()
+            elif button == 'up':
+                self._next_track()
+            elif button == 'down':
+                self._previous_track()
                 
-                print(f"Extracted code: {code[:20]}...")
-                
-                # Try direct token exchange
-                import requests
-                token_url = "https://accounts.spotify.com/api/token"
-                token_data = {
-                    'grant_type': 'authorization_code',
-                    'code': code,
-                    'redirect_uri': os.getenv('SPOTIFY_REDIRECT_URI'),
-                    'client_id': os.getenv('SPOTIFY_CLIENT_ID'),
-                    'client_secret': os.getenv('SPOTIFY_CLIENT_SECRET')
-                }
-                
-                response = requests.post(token_url, data=token_data)
-                
-                if response.status_code == 200:
-                    token_info = response.json()
-                    
-                    # Save token manually
-                    import json
-                    import time
-                    token_info['expires_at'] = int(time.time()) + token_info['expires_in']
-                    
-                    with open('.cache', 'w') as f:
-                        json.dump(token_info, f)
-                    
-                    print("✅ Authentication successful!")
-                    return True
-                else:
-                    error_info = response.json() if response.headers.get('content-type', '').startswith('application/json') else response.text
-                    raise Exception(f"Token exchange failed: {response.status_code} - {error_info}")
-            else:
-                raise Exception("No authorization code found in URL")
-                
-        except Exception as e:
-            print(f"❌ Authentication failed: {e}")
-            self.display.draw_centered_text("Auth failed\nTry again")
-            time.sleep(3)
-            return False
-        
+            time.sleep(0.1)  # Much faster response - was 0.5
+            
     def _clean_text(self, text):
         """Remove problematic Unicode characters"""
         if not text:
             return ""
         
-        # Convert to string and remove variation selectors and other problematic Unicode
         text = str(text)
         
         # Remove variation selectors and other invisible Unicode characters
@@ -151,30 +117,6 @@ class SpotifyApp:
         
         return cleaned
         
-    def run(self):
-        # Authenticate when the app is actually run
-        if not self._authenticate():
-            return  # Exit if authentication failed
-            
-        # Initialize Spotify client after successful authentication
-        self.sp = spotipy.Spotify(auth_manager=self.auth_manager)
-        
-        while True:
-            self._update_playback_state()
-            self._display_playback_info()
-            
-            button = self.buttons.get_pressed()
-            if button == 'back':
-                return
-            elif button == 'select':
-                self._toggle_playback()
-            elif button == 'up':
-                self._next_track()
-            elif button == 'down':
-                self._previous_track()
-                
-            time.sleep(0.1)  # Much faster response - was 0.5
-            
     def _update_playback_state(self):
         try:
             current = self.sp.current_playback()
