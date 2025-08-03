@@ -13,10 +13,12 @@ class SpotifyApp:
         self.auth_manager = SpotifyOAuth(
             client_id=os.getenv('SPOTIFY_CLIENT_ID'),
             client_secret=os.getenv('SPOTIFY_CLIENT_SECRET'),
-            redirect_uri=os.getenv('SPOTIFY_REDIRECT_URI'),
+            redirect_uri=os.getenv('SPOTIFY_REDIRECT_URI'),  
             scope="user-read-playback-state,user-modify-playback-state",
-            open_browser=False  # Prevent automatic browser opening
+            open_browser=False
         )
+        print(f"Redirect URI from .env: {os.getenv('SPOTIFY_REDIRECT_URI')}")
+        print(f"Auth manager redirect URI: {self.auth_manager.redirect_uri}")
         
         # Check if we need to authenticate
         token_info = self.auth_manager.get_cached_token()
@@ -27,6 +29,7 @@ class SpotifyApp:
             
             # Get the authorization URL
             auth_url = self.auth_manager.get_authorize_url()
+            print(f"Generated auth URL: {auth_url}")
             print(f"\n1. Go to this URL in a browser (phone/computer):")
             print(f"{auth_url}")
             print(f"\n2. Log in with your girlfriend's Spotify account")
