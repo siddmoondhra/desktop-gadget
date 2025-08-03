@@ -100,6 +100,13 @@ class SpotifyApp:
         return cleaned
         
     def run(self):
+        # Authenticate when the app is actually run
+        if not self._authenticate():
+            return  # Exit if authentication failed
+            
+        # Initialize Spotify client after successful authentication
+        self.sp = spotipy.Spotify(auth_manager=self.auth_manager)
+        
         while True:
             self._update_playback_state()
             self._display_playback_info()
