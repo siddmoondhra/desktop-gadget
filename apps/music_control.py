@@ -2,6 +2,7 @@ import os
 import time
 import spotipy
 from spotipy.oauth2 import SpotifyOAuth
+import urllib.parse
 
 class SpotifyApp:
     def __init__(self, display, buttons):
@@ -9,50 +10,67 @@ class SpotifyApp:
         self.display = display
         self.buttons = buttons
         
-        # Spotify setup with manual authentication
+        # Don't authenticate during init - wait until the app is run
         self.auth_manager = SpotifyOAuth(
             client_id=os.getenv('SPOTIFY_CLIENT_ID'),
             client_secret=os.getenv('SPOTIFY_CLIENT_SECRET'),
             redirect_uri=os.getenv('SPOTIFY_REDIRECT_URI'),
             scope="user-read-playback-state,user-modify-playback-state",
-            open_browser=False  # Prevent automatic browser opening
+            open_browser=False
         )
         
-        # Check if we need to authenticate
-        token_info = self.auth_manager.get_cached_token()
-        if not token_info:
-            print("\n" + "="*50)
-            print("SPOTIFY AUTHENTICATION REQUIRED")
-            print("="*50)
-            
-            # Get the authorization URL
-            auth_url = self.auth_manager.get_authorize_url()
-            print(f"\n1. Go to this URL in a browser (phone/computer):")
-            print(f"{auth_url}")
-            print(f"\n2. Log in with your girlfriend's Spotify account")
-            print(f"3. After logging in, copy the FULL URL from the address bar")
-            print(f"4. Paste it below and press Enter")
-            print(f"\nNote: The URL will start with 'http://localhost:8080/?code=...'")
-            print(f"It's normal if the page shows an error - just copy the URL!")
-            print("-" * 50)
-            
-            # Get the redirect response
-            redirect_response = input("Paste the redirect URL here: ").strip()
-            
-            try:
-                # Get the access token
-                token_info = self.auth_manager.get_access_token(redirect_response)
-                print("Authentication successful!")
-                time.sleep(2)
-            except Exception as e:
-                print(f"Authentication failed: {e}")
-                print("Please try running the app again.")
-                raise
-        
-        # Initialize Spotify client
-        self.sp = spotipy.Spotify(auth_manager=self.auth_manager)
+        self.sp = None
         self.current_track = None
         self.is_playing = False
+        
+    def _authenticate(self):
+        """Handle Spotify authentication when needed"""
+        # Check if we already have a token
+        token_info = self.auth_manager.get_cached_token()
+        if token_info:
+            return True
+            
+        self.display.draw_centered_text("Spotify Auth\nRequired")
+        time.sleep(2)
+        
+        print("\n" + "="*50)
+        print("SPOTIFY AUTHENTICATION REQUIRED")
+        print("="*50)
+        
+        # Get the authorization URL
+        auth_url = self.auth_manager.get_authorize_url()
+        print(f"\n1. Go to this URL in a browser:")
+        print(f"{auth_url}")
+        print(f"\n2. Log in with your girlfriend's Spotify account")
+        print(f"3. Copy the FULL URL from the address bar")
+        print(f"4. Paste it below and press Enter")
+        print("-" * 50)
+        
+        # Get the redirect response
+        redirect_response = input("Paste the redirect URL here: ").strip()
+        
+        try:
+            # Extract just the authorization code
+            if 'code=' in redirect_response:
+                # Parse the code from the URL
+                parsed = urllib.parse.urlparse(redirect_response)
+                query_params = urllib.parse.parse_qs(parsed.query)
+                code = query_params.get('code', [None])[0]
+                
+                if code:
+                    token_info = self.auth_manager.get_access_token(code)
+                    print("✅ Authentication successful!")
+                    return True
+                else:
+                    raise Exception("No code found in URL")
+            else:
+                raise Exception("Invalid URL format")
+                
+        except Exception as e:
+            print(f"❌ Authentication failed: {e}")
+            self.display.draw_centered_text("Auth failed\nTry again")
+            time.sleep(3)
+            return False
         
     def _clean_text(self, text):
         """Remove problematic Unicode characters"""
