@@ -24,7 +24,7 @@ class SpotifyApp:
         self.is_playing = False
         
     def _authenticate(self):
-        """Handle Spotify authentication when needed"""
+        """Handle Spotify authentication using Device Flow (no redirect URI needed)"""
         # Check if we already have a token
         token_info = self.auth_manager.get_cached_token()
         if token_info:
@@ -34,40 +34,76 @@ class SpotifyApp:
         time.sleep(2)
         
         print("\n" + "="*50)
-        print("SPOTIFY AUTHENTICATION REQUIRED")
+        print("SPOTIFY DEVICE AUTHENTICATION")
         print("="*50)
         
-        # Get the authorization URL
-        auth_url = self.auth_manager.get_authorize_url()
-        print(f"\n1. Go to this URL in a browser:")
-        print(f"{auth_url}")
-        print(f"\n2. Log in with your girlfriend's Spotify account")
-        print(f"3. Copy the FULL URL from the address bar")
-        print(f"4. Paste it below and press Enter")
-        print("-" * 50)
-        
-        # Get the redirect response
-        redirect_response = input("Paste the redirect URL here: ").strip()
-        
         try:
-            # Extract just the authorization code
-            if 'code=' in redirect_response:
-                # Parse the code from the URL
-                parsed = urllib.parse.urlparse(redirect_response)
-                query_params = urllib.parse.parse_qs(parsed.query)
-                code = query_params.get('code', [None])[0]
+            # Use device flow instead of authorization code flow
+            import requests
+            
+            # Get device code
+            device_auth_url = "https://accounts.spotify.com/api/token"
+            device_code_data = {
+                'client_id': os.getenv('SPOTIFY_CLIENT_ID'),
+                'scope': 'user-read-playback-state user-modify-playback-state'
+            }
+            
+            # Request device code
+            device_response = requests.post(
+                "https://accounts.spotify.com/api/device-authorization",
+                data=device_code_data
+            )
+            
+            if device_response.status_code == 200:
+                device_data = device_response.json()
                 
-                if code:
-                    token_info = self.auth_manager.get_access_token(code)
-                    print("✅ Authentication successful!")
-                    return True
-                else:
-                    raise Exception("No code found in URL")
+                print(f"\n1. Go to: {device_data['verification_uri']}")
+                print(f"2. Enter this code: {device_data['user_code']}")
+                print(f"3. Log in with your girlfriend's Spotify account")
+                print(f"4. Press Enter here when done")
+                print("-" * 50)
+                
+                self.display.draw_centered_text(f"Go to:\nspotify.com/pair\nCode: {device_data['user_code']}")
+                
+                input("Press Enter after completing authentication...")
+                
+                # Poll for token
+                token_data = {
+                    'client_id': os.getenv('SPOTIFY_CLIENT_ID'),
+                    'client_secret': os.getenv('SPOTIFY_CLIENT_SECRET'),
+                    'device_code': device_data['device_code'],
+                    'grant_type': 'urn:ietf:params:oauth:grant-type:device_code'
+                }
+                
+                for attempt in range(30):  # Try for 5 minutes
+                    token_response = requests.post(device_auth_url, data=token_data)
+                    
+                    if token_response.status_code == 200:
+                        token_info = token_response.json()
+                        
+                        # Save token manually since we're not using the normal flow
+                        import json
+                        with open('.cache', 'w') as f:
+                            json.dump(token_info, f)
+                        
+                        print("✅ Authentication successful!")
+                        return True
+                    elif token_response.status_code == 400:
+                        error = token_response.json()
+                        if error.get('error') == 'authorization_pending':
+                            time.sleep(device_data['interval'])
+                            continue
+                        else:
+                            raise Exception(f"Auth error: {error}")
+                    else:
+                        time.sleep(device_data['interval'])
+                
+                raise Exception("Authentication timed out")
             else:
-                raise Exception("Invalid URL format")
+                raise Exception(f"Failed to get device code: {device_response.status_code}")
                 
         except Exception as e:
-            print(f"❌ Authentication failed: {e}")
+            print(f"❌ Device authentication failed: {e}")
             self.display.draw_centered_text("Auth failed\nTry again")
             time.sleep(3)
             return False
