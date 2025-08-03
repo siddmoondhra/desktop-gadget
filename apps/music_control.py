@@ -18,11 +18,6 @@ class SpotifyApp:
             open_browser=False  # Prevent automatic browser opening
         )
         
-        self.sp = None
-        self.current_track = None
-        self.is_playing = False
-        
-    def run(self):
         # Check if we need to authenticate
         token_info = self.auth_manager.get_cached_token()
         if not token_info:
@@ -37,7 +32,7 @@ class SpotifyApp:
             print(f"\n2. Log in with your girlfriend's Spotify account")
             print(f"3. After logging in, copy the FULL URL from the address bar")
             print(f"4. Paste it below and press Enter")
-            print(f"\nNote: The URL will start with 'http://127.0.0.1:8888/callback?code=...'")
+            print(f"\nNote: The URL will start with 'http://localhost:8080/?code=...'")
             print(f"It's normal if the page shows an error - just copy the URL!")
             print("-" * 50)
             
@@ -52,32 +47,19 @@ class SpotifyApp:
             except Exception as e:
                 print(f"Authentication failed: {e}")
                 print("Please try running the app again.")
-                return
+                raise
         
         # Initialize Spotify client
         self.sp = spotipy.Spotify(auth_manager=self.auth_manager)
+        self.current_track = None
+        self.is_playing = False
         
-        while True:
-            self._update_playback_state()
-            self._display_playback_info()
-            
-            button = self.buttons.get_pressed()
-            if button == 'back':
-                return
-            elif button == 'select':
-                self._toggle_playback()
-            elif button == 'up':
-                self._next_track()
-            elif button == 'down':
-                self._previous_track()
-                
-            time.sleep(0.1)  # Much faster response - was 0.5
-            
     def _clean_text(self, text):
         """Remove problematic Unicode characters"""
         if not text:
             return ""
         
+        # Convert to string and remove variation selectors and other problematic Unicode
         text = str(text)
         
         # Remove variation selectors and other invisible Unicode characters
@@ -117,6 +99,23 @@ class SpotifyApp:
         
         return cleaned
         
+    def run(self):
+        while True:
+            self._update_playback_state()
+            self._display_playback_info()
+            
+            button = self.buttons.get_pressed()
+            if button == 'back':
+                return
+            elif button == 'select':
+                self._toggle_playback()
+            elif button == 'up':
+                self._next_track()
+            elif button == 'down':
+                self._previous_track()
+                
+            time.sleep(0.1)  # Much faster response - was 0.5
+            
     def _update_playback_state(self):
         try:
             current = self.sp.current_playback()
