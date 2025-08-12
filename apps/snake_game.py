@@ -26,10 +26,12 @@ class SnakeGame:
         self.last_back_press = 0
         self.double_press_window = 0.5  # 0.5 seconds to register double press
         
+        # Direction buffering for rapid inputs
+        self.queued_direction = None
+        
     def run(self):
         self._reset_game()
-        # Use a separate timer for automatic movement
-        last_auto_move_time = time.time()
+        last_move_time = time.time()
         
         while True:
             current_time = time.time()
@@ -44,31 +46,36 @@ class SnakeGame:
                     self.last_back_press = current_time
             elif button == 'select' and self.game_over:
                 self._reset_game()
-                last_auto_move_time = time.time()
+                last_move_time = time.time()
                 continue
             elif not self.game_over:
                 if button in ['up', 'down', 'left', 'right']:
                     # Absolute direction mapping
                     mapping = {'up': (0, -1), 'down': (0, 1), 'left': (-1, 0), 'right': (1, 0)}
                     new_direction = mapping[button]
-                    # Only change if the new direction is not directly opposite
-                    if new_direction != (-self.direction[0], -self.direction[1]):
-                        self.direction = new_direction
-                        self._move_snake()  # Immediate move for manual input
-                        last_auto_move_time = current_time
+                    # Determine effective current direction
+                    effective_direction = self.queued_direction if self.queued_direction is not None else self.direction
+                    if new_direction != (-effective_direction[0], -effective_direction[1]):
+                        self.queued_direction = new_direction
                 elif button == 'select':
-                    # Boost/turbo mode - move snake immediately
+                    # Turbo: process queued direction if any and move immediately
+                    if self.queued_direction is not None:
+                        self.direction = self.queued_direction
+                        self.queued_direction = None
                     self._move_snake()
-                    last_auto_move_time = current_time
+                    last_move_time = current_time
             
-            # Automatic snake movement based on the timer
-            if not self.game_over and current_time - last_auto_move_time >= self.speed:
+            # Automatic move based on timer
+            if not self.game_over and current_time - last_move_time >= self.speed:
+                if self.queued_direction is not None:
+                    self.direction = self.queued_direction
+                    self.queued_direction = None
                 self._move_snake()
-                last_auto_move_time = current_time
+                last_move_time = current_time
                 
             # Draw game
             self._draw_game()
-            time.sleep(0.01)  # Reduced delay for faster responsiveness
+            time.sleep(0.01)  # Faster loop for rapid input
             
     def _reset_game(self):
         self.snake = [(self.game_width // 2, self.game_height // 2)]
@@ -78,6 +85,7 @@ class SnakeGame:
         self.game_over = False
         self.back_press_count = 0
         self.last_back_press = 0
+        self.queued_direction = None
         
     def _generate_food(self):
         while True:
