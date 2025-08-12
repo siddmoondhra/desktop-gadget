@@ -36,26 +36,23 @@ class SnakeGame:
             # Handle input
             button = self.buttons.get_pressed()
             if button == 'back':
-                # Handle double-press exit logic
-                current_time = time.time()
+                # Handle double-press exit logic without changing direction
                 if current_time - self.last_back_press < self.double_press_window:
-                    # Double press - exit game
                     return
                 else:
-                    # Single press - turn left (if not game over)
-                    if not self.game_over:
-                        self._turn_left()
                     self.last_back_press = current_time
             elif button == 'select' and self.game_over:
                 self._reset_game()
                 last_move_time = current_time
                 continue
             elif not self.game_over:
-                # Relative turning
-                if button == 'up':
-                    self._turn_left()
-                elif button == 'down':
-                    self._turn_right()
+                if button in ['up', 'down', 'left', 'right']:
+                    # Absolute direction mapping
+                    mapping = {'up': (0, -1), 'down': (0, 1), 'left': (-1, 0), 'right': (1, 0)}
+                    new_direction = mapping[button]
+                    # Only change to the new direction if it's not directly opposite
+                    if new_direction != (-self.direction[0], -self.direction[1]):
+                        self.direction = new_direction
                 elif button == 'select':
                     # Boost/turbo mode - move faster this frame
                     self._move_snake()  # Extra move for speed
@@ -77,18 +74,6 @@ class SnakeGame:
         self.game_over = False
         self.back_press_count = 0
         self.last_back_press = 0
-        
-    def _turn_left(self):
-        # Rotate direction 90 degrees counter-clockwise
-        directions = [(1, 0), (0, -1), (-1, 0), (0, 1)]  # right, up, left, down
-        current_index = directions.index(self.direction)
-        self.direction = directions[(current_index + 1) % 4]
-        
-    def _turn_right(self):
-        # Rotate direction 90 degrees clockwise
-        directions = [(1, 0), (0, -1), (-1, 0), (0, 1)]  # right, up, left, down
-        current_index = directions.index(self.direction)
-        self.direction = directions[(current_index - 1) % 4]
         
     def _generate_food(self):
         while True:
