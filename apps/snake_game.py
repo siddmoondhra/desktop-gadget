@@ -28,7 +28,8 @@ class SnakeGame:
         
     def run(self):
         self._reset_game()
-        last_move_time = time.time()
+        # Use a separate timer for automatic movement
+        last_auto_move_time = time.time()
         
         while True:
             current_time = time.time()
@@ -43,27 +44,25 @@ class SnakeGame:
                     self.last_back_press = current_time
             elif button == 'select' and self.game_over:
                 self._reset_game()
-                last_move_time = current_time
+                last_auto_move_time = time.time()
                 continue
             elif not self.game_over:
                 if button in ['up', 'down', 'left', 'right']:
                     # Absolute direction mapping
                     mapping = {'up': (0, -1), 'down': (0, 1), 'left': (-1, 0), 'right': (1, 0)}
                     new_direction = mapping[button]
-                    # Only change to the new direction if it's not directly opposite
+                    # Only change if the new direction is not directly opposite
                     if new_direction != (-self.direction[0], -self.direction[1]):
                         self.direction = new_direction
-                        self._move_snake()  # Immediate move on direction change
-                        last_move_time = current_time
+                        self._move_snake()  # Immediate move for manual input
                 elif button == 'select':
-                    # Boost/turbo mode - move faster this frame
+                    # Boost/turbo mode - move snake immediately
                     self._move_snake()
-                    last_move_time = current_time
             
-            # Automatic snake movement if no immediate move was made
-            if not self.game_over and current_time - last_move_time >= self.speed:
+            # Automatic snake movement based on the timer
+            if not self.game_over and current_time - last_auto_move_time >= self.speed:
                 self._move_snake()
-                last_move_time = current_time
+                last_auto_move_time = current_time
                 
             # Draw game
             self._draw_game()
