@@ -19,7 +19,7 @@ class SnakeGame:
         self.food = self._generate_food()
         self.score = 0
         self.game_over = False
-        self.speed = 0.3  # Seconds between moves
+        self.speed = 0.15  # Faster default speed
         
         # Back button handling for double-press exit
         self.back_press_count = 0
