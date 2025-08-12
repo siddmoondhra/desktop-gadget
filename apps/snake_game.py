@@ -55,9 +55,11 @@ class SnakeGame:
                     if new_direction != (-self.direction[0], -self.direction[1]):
                         self.direction = new_direction
                         self._move_snake()  # Immediate move for manual input
+                        last_auto_move_time = current_time
                 elif button == 'select':
                     # Boost/turbo mode - move snake immediately
                     self._move_snake()
+                    last_auto_move_time = current_time
             
             # Automatic snake movement based on the timer
             if not self.game_over and current_time - last_auto_move_time >= self.speed:
@@ -66,7 +68,7 @@ class SnakeGame:
                 
             # Draw game
             self._draw_game()
-            time.sleep(0.05)  # Small delay for button responsiveness
+            time.sleep(0.01)  # Reduced delay for faster responsiveness
             
     def _reset_game(self):
         self.snake = [(self.game_width // 2, self.game_height // 2)]
