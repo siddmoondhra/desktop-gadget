@@ -9,6 +9,7 @@ from apps.timer import TimerApp
 from apps.snake_game import SnakeGame  # Your existing snake game
 from apps.dino_game import DinoRunner  # Your existing dino game
 from apps.games_menu import GamesMenu  # New games menu
+from apps.hello import HelloScreen  # ADD THIS IMPORT
 from lib.display import Display
 from lib.buttons import ButtonHandler
 import config
@@ -20,9 +21,9 @@ def main():
         display = Display(i2c, config.OLED_WIDTH, config.OLED_HEIGHT, config.OLED_ADDRESS)
         buttons = ButtonHandler(config)
         
-        # Show startup message
-        display.draw_centered_text("Starting up...")
-        time.sleep(1)
+        # SHOW HELLO SCREEN FIRST
+        hello = HelloScreen(display, buttons)
+        hello.show()
         
         # Initialize games separately
         games = [
