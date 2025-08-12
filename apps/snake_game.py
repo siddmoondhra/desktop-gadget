@@ -19,7 +19,7 @@ class SnakeGame:
         self.food = self._generate_food()
         self.score = 0
         self.game_over = False
-        self.speed = 0.3  # Seconds between moves
+        self.speed = 0.4  # Increased delay; slower snake (initially was 0.3 seconds between moves)
         
         # Back button handling for double-press exit
         self.back_press_count = 0
@@ -29,34 +29,43 @@ class SnakeGame:
     def run(self):
         self._reset_game()
         last_move_time = time.time()
+        prev_button = None  # Track previous button to allow consecutive presses
         
         while True:
             current_time = time.time()
             
             # Handle input
             button = self.buttons.get_pressed()
-            if button == 'back':
-                # Handle double-press exit logic without changing direction
-                if current_time - self.last_back_press < self.double_press_window:
-                    return
-                else:
-                    self.last_back_press = current_time
-            elif button == 'select' and self.game_over:
-                self._reset_game()
-                last_move_time = current_time
-                continue
-            elif not self.game_over:
-                if button in ['up', 'down', 'left', 'right']:
-                    # Absolute direction mapping
-                    mapping = {'up': (0, -1), 'down': (0, 1), 'left': (-1, 0), 'right': (1, 0)}
-                    new_direction = mapping[button]
-                    # Only change to the new direction if it's not directly opposite
-                    if new_direction != (-self.direction[0], -self.direction[1]):
-                        self.direction = new_direction
-                elif button == 'select':
-                    # Boost/turbo mode - move faster this frame
-                    self._move_snake()  # Extra move for speed
+            
+            if button is None:
+                prev_button = None
+            else:
+                if button != prev_button:  # Only process if new press
+                    if button == 'back':
+                        # Handle double-press exit logic without changing direction
+                        if current_time - self.last_back_press < self.double_press_window:
+                            return
+                        else:
+                            self.last_back_press = current_time
+                    elif button == 'select' and self.game_over:
+                        self._reset_game()
+                        last_move_time = current_time
+                        prev_button = button
+                        continue
+                    elif not self.game_over:
+                        if button in ['up', 'down', 'left', 'right']:
+                            # Absolute direction mapping
+                            mapping = {'up': (0, -1), 'down': (0, 1), 'left': (-1, 0), 'right': (1, 0)}
+                            new_direction = mapping[button]
+                            # Only change to the new direction if it's not directly opposite
+                            if new_direction != (-self.direction[0], -self.direction[1]):
+                                self.direction = new_direction
+                        elif button == 'select':
+                            # Boost/turbo mode - move faster this frame
+                            self._move_snake()
                 
+                prev_button = button
+            
             # Game logic
             if not self.game_over and current_time - last_move_time >= self.speed:
                 self._move_snake()
