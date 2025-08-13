@@ -1,6 +1,7 @@
 from lib.display import Display
 from lib.buttons import ButtonHandler
 import time
+import subprocess
 
 class Menu:
     def __init__(self, display, buttons, apps):
@@ -31,3 +32,33 @@ class Menu:
             self.selected_index = (self.selected_index + 1) % len(self.apps)
         elif button == 'select':
             self.current_app = self.apps[self.selected_index]
+        elif button == 'back':
+            # Show shutdown confirmation
+            self._show_shutdown_confirmation()
+    
+    def _show_shutdown_confirmation(self):
+        """Show shutdown confirmation screen"""
+        while True:
+            self.display.draw_centered_text("Shutdown Pi?\nSELECT=Yes BACK=No")
+            
+            button = self.buttons.get_pressed()
+            if button == 'select':
+                # User confirmed shutdown
+                self.display.draw_centered_text("Shutting down...\nGoodbye!")
+                time.sleep(2)
+                self.display.clear()
+                self._shutdown_system()
+                break
+            elif button == 'back':
+                # User cancelled shutdown
+                return  # Go back to main menu
+            
+            time.sleep(0.1)
+    
+    def _shutdown_system(self):
+        """Safely shutdown the system"""
+        try:
+            subprocess.run(['sudo', 'shutdown', '-h', 'now'], check=True)
+        except Exception as e:
+            print(f"Shutdown failed: {e}")
+            self.display.draw_centered_text("Shutdown failed!\nTry manually")
