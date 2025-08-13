@@ -38,9 +38,9 @@ class SpotifyApp:
             elif button == 'select':
                 self._toggle_playback()
             elif button == 'up':
-                self._next_track()
-            elif button == 'down':
                 self._previous_track()
+            elif button == 'down':
+                self._next_track()
                 
             time.sleep(0.1)
             
