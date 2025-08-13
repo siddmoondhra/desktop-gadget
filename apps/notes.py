@@ -16,7 +16,7 @@ class NotesApp:
             "Lock in and achieve your goals",
             "Take it one task at a time",
             "You're more capable than you realize",
-            "Don't forget to hydrate :)",
+            "Don't forget to hydrate :)"
         ]
         self.current_note = 0
         
