@@ -47,9 +47,7 @@ class Menu:
                 self.display.draw_centered_text("Shutting down...\nGoodbye!")
                 time.sleep(1)
                 
-                # Clear display thoroughly
-                self._clear_display_for_shutdown()
-                
+                # Don't clear display - just shutdown
                 self._shutdown_system()
                 break
             elif button == 'back':
@@ -59,17 +57,10 @@ class Menu:
             time.sleep(0.1)
     
     def _clear_display_for_shutdown(self):
-        """Clear display thoroughly before shutdown"""
+        """Simple display clear before shutdown"""
         try:
-            # Clear multiple times
-            for i in range(3):
-                self.display.clear()
-                time.sleep(0.2)
-            
-            # Try to power off display if method exists
-            if hasattr(self.display, 'power_off'):
-                self.display.power_off()
-            
+            # Just do a basic clear - don't try to be fancy
+            self.display.clear()
         except Exception as e:
             print(f"Display clear error: {e}")
     
