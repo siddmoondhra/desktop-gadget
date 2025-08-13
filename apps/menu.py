@@ -45,8 +45,11 @@ class Menu:
             if button == 'select':
                 # User confirmed shutdown
                 self.display.draw_centered_text("Shutting down...\nGoodbye!")
-                time.sleep(2)
-                self.display.clear()
+                time.sleep(1)
+                
+                # Clear display multiple times to ensure it's really off
+                self.display.power_off()
+                
                 self._shutdown_system()
                 break
             elif button == 'back':

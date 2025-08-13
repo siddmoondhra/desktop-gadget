@@ -23,10 +23,34 @@ class Display:
         
     def clear(self):
         try:
+            # Clear the display buffer
             self.oled.fill(0)
             self.oled.show()
+            
+            # Force a second clear to ensure it's really off
+            self.oled.fill(0)
+            self.oled.show()
+            
         except Exception as e:
             print(f"Display clear error: {e}")
+    
+    def power_off(self):
+        """More aggressive clear for shutdown"""
+        try:
+            # Clear multiple times
+            for _ in range(5):
+                self.oled.fill(0)
+                self.oled.show()
+            
+            # Try to turn off the display entirely if possible
+            try:
+                # Some displays support this command
+                self.oled.write_cmd(0xAE)  # Display OFF command
+            except:
+                pass
+                
+        except Exception as e:
+            print(f"Display power off error: {e}")
         
     def draw_text(self, text, x=0, y=0):
         try:
