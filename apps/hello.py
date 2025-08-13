@@ -1,5 +1,6 @@
 import time
-from datetime import datetime
+from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
 
 class HelloScreen:
     def __init__(self, display, buttons):
@@ -29,7 +30,8 @@ class HelloScreen:
     
     def _update_display(self):
         """Update the display with current date and time"""
-        now = datetime.now()
+        # Get current time in EST/EDT
+        now = datetime.now(timezone.utc).astimezone(ZoneInfo("America/New_York"))
 
         # Format the date and time
         date_str = now.strftime("%b %d, %Y")  # e.g., "Jan 15, 2025"
@@ -38,7 +40,7 @@ class HelloScreen:
         # Create the display message (date and time only)
         hello_messages = [
             f"{date_str}",
-            f"{time_str}"
+            f"{time_str} ET"  # Using ET to cover both EST and EDT
         ]
 
         # Display the message
